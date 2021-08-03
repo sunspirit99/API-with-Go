@@ -4,15 +4,13 @@ import (
 	"log"
 	"net/http"
 	"rest-go-demo/controllers"
-	"rest-go-demo/database"
-	"rest-go-demo/entity"
 
 	"github.com/gorilla/mux"
 	_ "github.com/jinzhu/gorm/dialects/mysql" //Required for MySQL dialect
 )
 
 func main() {
-	initDB()
+	// InitDB()
 	log.Println("Starting the HTTP server on port 8000")
 
 	router := mux.NewRouter().StrictSlash(true)
@@ -32,19 +30,19 @@ func initaliseHandlers(router *mux.Router) {
 	router.HandleFunc("/transfer", controllers.UserTransfer).Methods("PUT")
 }
 
-func initDB() {
-	config :=
-		database.Config{
-			ServerName: "127.0.0.1:3306",
-			User:       "root",
-			Password:   "",
-			DB:         "data1",
-		}
+// func InitDB() {
+// 	config :=
+// 		database.Config{
+// 			ServerName: "127.0.0.1:3306",
+// 			User:       "nampkh",
+// 			Password:   "password",
+// 			DB:         "data1",
+// 		}
 
-	connectionString := database.GetConnectionString(config)
-	err := database.Connect(connectionString)
-	if err != nil {
-		panic(err.Error())
-	}
-	database.Migrate(&entity.User{})
-}
+// 	connectionString := database.GetConnectionString(config)
+// 	err := database.Connect(connectionString)
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+// 	database.Migrate(&entity.User{})
+// }

@@ -2,19 +2,26 @@ package controllers
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"rest-go-demo/database"
 	"testing"
 )
 
-func testGetAllUser(t *testing.T) {
+func init() {
+	connector := database.Connector
+	fmt.Println(connector)
+}
+
+func TestGetAllUser(t *testing.T) {
 	req, err := http.NewRequest("GET", "/get", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
 	handler := http.HandlerFunc(GetAllUser)
-	handler.ServerHTTP(w, req)
+	handler.ServeHTTP(w, req)
 	if status := w.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 
@@ -24,6 +31,7 @@ func testGetAllUser(t *testing.T) {
 		t.Errorf("handler returned unexpected bot: got %v want %v", w.Body.String(), expected)
 	}
 }
+
 func testGetUserById(t *testing.T) {
 	req, err := http.NewRequest("GET", "/get/{id}", nil)
 	if err != nil {
@@ -34,7 +42,7 @@ func testGetUserById(t *testing.T) {
 	req.URL.RawQuery = q.Encode()
 	w := httptest.NewRecorder()
 	handler := http.HandlerFunc(GetUserByID)
-	handler.ServerHTTP(w, req)
+	handler.ServeHTTP(w, req)
 	if status := w.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 
@@ -54,7 +62,7 @@ func testUpdateUserById(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	handler := http.HandlerFunc(GetUserByID)
-	handler.ServerHTTP(w, req)
+	handler.ServeHTTP(w, req)
 	if status := w.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 
