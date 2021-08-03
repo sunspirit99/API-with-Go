@@ -9,11 +9,6 @@ import (
 	"testing"
 )
 
-func init() {
-	connector := database.Connector
-	fmt.Println(connector)
-}
-
 func TestGetAllUser(t *testing.T) {
 	req, err := http.NewRequest("GET", "/get", nil)
 	if err != nil {
