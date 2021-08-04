@@ -13,7 +13,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const min float64 = 50000
+const minBalance float64 = 5000
+const minCost float64 = 1000
 
 //GetAllPerson get all user data
 func GetAllUser(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +32,8 @@ func GetAllUser(w http.ResponseWriter, r *http.Request) {
 //GetPersonByID returns user with specific ID
 func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	key := vars["ID"]
+	key := vars["id"]
+	fmt.Println(vars)
 
 	var user entity.User
 	error := database.Connector.First(&user, key).Error
@@ -118,8 +120,19 @@ func UserWithdraw(w http.ResponseWriter, r *http.Request) {
 
 	var user entity.User
 	database.Connector.First(&user, cb.ID)
-
-	Withdraw(&user, cb.Amount)
+	if user.Balance < minBalance {
+		fmt.Println("You dont have enough money to withdraw !")
+		return
+	} else if user.Balance-cb.Amount < minBalance {
+		fmt.Println("The maximum amount that can be withdrawn is", user.Balance-minBalance, "!")
+		return
+	} else if cb.Amount < minCost {
+		fmt.Println("The minimum amount to perform a transaction is", minCost, "!")
+		return
+	} else {
+		Withdraw(&user, cb.Amount)
+		fmt.Println("you just successfully withdrew", cb.Amount, "from your account !")
+	}
 
 	t := time.Now()                                      //set thoi gian hien tai
 	user.Modified_time = t.Format("2020-01-02 15:04:05") //truyen vao
@@ -147,7 +160,13 @@ func UserDeposit(w http.ResponseWriter, r *http.Request) {
 	var user entity.User
 	database.Connector.First(&user, cb.ID)
 
-	Deposit(&user, cb.Amount)
+	if cb.Amount < minCost {
+		fmt.Println("The minimum amount to perform a transaction is", minCost, "!")
+		return
+	} else {
+		Deposit(&user, cb.Amount)
+		fmt.Println("you just successfully deposited", cb.Amount, "to your account !")
+	}
 
 	t := time.Now()                                      //set thoi gian hien tai
 	user.Modified_time = t.Format("2020-01-02 15:04:05") // truyen vao
@@ -164,7 +183,7 @@ func UserTransfer(w http.ResponseWriter, r *http.Request) {
 
 	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println("Enter all required information")
+		panic("Enter all required information !!!")
 	}
 	var cb entity.ChangeBalance
 
@@ -173,14 +192,19 @@ func UserTransfer(w http.ResponseWriter, r *http.Request) {
 	var users []entity.User
 	trans := []int64{cb.ID, cb.TargetId} //id la tk chuyen , targetId la tk nhan
 	database.Connector.Find(&users, trans)
-	if users[0].Balance < min {
-		fmt.Println("You dont have enough money to transfer")
-	} else if cb.Amount < users[0].Balance {
-		Withdraw(&users[0], cb.Amount) // rut tien tu tk = amount
-		Deposit(&users[1], cb.Amount)  //chuyen tien sang tk = amount
-		fmt.Println("Transfer : Successful ", cb.Amount)
+	if users[0].Balance < minBalance {
+		fmt.Println("You dont have enough money to transfer !")
+		return
+	} else if users[0].Balance-cb.Amount < minBalance {
+		fmt.Println("The maximum amount that can be transferred is", users[0].Balance-minBalance, "!")
+		return
+	} else if cb.Amount < minCost {
+		fmt.Println("The minimum amount that can be transferred is", minCost, "!")
+		return
 	} else {
-		fmt.Println(" The amount to be transferred must be greater than the balance")
+		Withdraw(&users[0], cb.Amount)
+		Deposit(&users[1], cb.Amount)
+		fmt.Println("you just successfully transferred", cb.Amount, "to id :", cb.TargetId, "!")
 	}
 	t := time.Now()
 	users[0].Modified_time = t.Format("2006-01-02 15:04:05")
@@ -197,29 +221,10 @@ func UserTransfer(w http.ResponseWriter, r *http.Request) {
 
 // check withdraw amount and withdrawal function
 func Withdraw(user *entity.User, num float64) {
-	if num < 0 {
-		fmt.Println("Invalid input !")
-	} else if user.Balance < min {
-		fmt.Println("You dont have enough money !")
-	} else if user.Balance < num {
-		fmt.Println("the amount you need to withdraw must be less than your balance !")
-	} else {
-		user.Balance = user.Balance - num
-		fmt.Println("Success")
-
-	}
+	user.Balance = user.Balance - num
 }
 
 //check deposit amount and deposit function
 func Deposit(user *entity.User, num float64) {
-	if num < 0 {
-		fmt.Print("Invalid input !")
-	} else if num < min {
-		fmt.Println("Minimum amount to deposit is more than ", min)
-
-	} else {
-		user.Balance = user.Balance + num
-		fmt.Println("Success")
-	}
-
+	user.Balance = user.Balance + num
 }

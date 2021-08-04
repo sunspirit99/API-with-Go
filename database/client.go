@@ -17,8 +17,8 @@ func init() {
 		Config{
 			ServerName: "127.0.0.1:3306",
 			User:       "root",
-			Password:   "",
-			DB:         "data1",
+			Password:   "Sunspirit9.9",
+			DB:         "Bank",
 		}
 
 	connectionString := GetConnectionString(config)
