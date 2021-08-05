@@ -120,3 +120,137 @@ func TestDeleteUser(t *testing.T) {
 		t.Errorf("handler returned unexpected bot: got %v want %v", w.Body.String(), expected)
 	}
 }
+func TestWithdraw(t *testing.T) {
+
+	var jsonStr = []byte(`{"id":1,"name":"Lan","amount":5000,"targetID":1}`)
+
+	req, err := http.NewRequest("PUT", "/withdraw", bytes.NewBuffer(jsonStr))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	handler := http.HandlerFunc(UserWithdraw)
+	handler.ServeHTTP(w, req)
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+	expected := `{"id":1,"name":"Lan","balance":130000,"created_time":"2006-01-02 15:04:05","modified_time":"2006-01-02 15:10:00"}`
+	if strings.TrimSpace(w.Body.String()) != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
+}
+func TestDeposit(t *testing.T) {
+
+	var jsonStr = []byte(`{"id":1,"name":"Lan","amount":5000,"targetID":1}`)
+
+	req, err := http.NewRequest("PUT", "/deposit", bytes.NewBuffer(jsonStr))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	handler := http.HandlerFunc(UserDeposit)
+	handler.ServeHTTP(w, req)
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+	expected := `{"id":1,"name":"Lan","balance":115000,"created_time":"2006-01-02 15:04:05","modified_time":"2006-01-02 15:10:00"}`
+	if strings.TrimSpace(w.Body.String()) != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
+}
+
+func TestTransfer(t *testing.T) {
+
+	var jsonStr = []byte(`{"id":1,"name":"Lan","amount":5000,"targetID":2}`)
+
+	req, err := http.NewRequest("PUT", "/transfer", bytes.NewBuffer(jsonStr))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	handler := http.HandlerFunc(UserTransfer)
+	handler.ServeHTTP(w, req)
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+	expected := `[{"id":1,"name":"Lan","balance":120000,"created_time":"2006-01-02 15:04:05","modified_time":"2006-01-02 15:10:00"},{"id":2,"name":"Hoa","balance":155000,"created_time":"2006-01-02 15:04:05","modified_time":"2021-08-04 15:58:31"}]`
+	if strings.TrimSpace(w.Body.String()) != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
+}
+func TestWithdraw(t *testing.T) {
+
+	var jsonStr = []byte(`{"id":1,"name":"Lan","amount":5000,"targetID":1}`)
+
+	req, err := http.NewRequest("PUT", "/withdraw", bytes.NewBuffer(jsonStr))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	handler := http.HandlerFunc(UserWithdraw)
+	handler.ServeHTTP(w, req)
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+	expected := `{"id":1,"name":"Lan","balance":130000,"created_time":"2006-01-02 15:04:05","modified_time":"2006-01-02 15:10:00"}`
+	if strings.TrimSpace(w.Body.String()) != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
+}
+func TestDeposit(t *testing.T) {
+
+	var jsonStr = []byte(`{"id":1,"name":"Lan","amount":5000,"targetID":1}`)
+
+	req, err := http.NewRequest("PUT", "/deposit", bytes.NewBuffer(jsonStr))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	handler := http.HandlerFunc(UserDeposit)
+	handler.ServeHTTP(w, req)
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+	expected := `{"id":1,"name":"Lan","balance":115000,"created_time":"2006-01-02 15:04:05","modified_time":"2006-01-02 15:10:00"}`
+	if strings.TrimSpace(w.Body.String()) != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
+}
+
+func TestTransfer(t *testing.T) {
+
+	var jsonStr = []byte(`{"id":1,"name":"Lan","amount":5000,"targetID":2}`)
+
+	req, err := http.NewRequest("PUT", "/transfer", bytes.NewBuffer(jsonStr))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	handler := http.HandlerFunc(UserTransfer)
+	handler.ServeHTTP(w, req)
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+	expected := `[{"id":1,"name":"Lan","balance":120000,"created_time":"2006-01-02 15:04:05","modified_time":"2006-01-02 15:10:00"},{"id":2,"name":"Hoa","balance":155000,"created_time":"2006-01-02 15:04:05","modified_time":"2021-08-04 15:58:31"}]`
+	if strings.TrimSpace(w.Body.String()) != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
+}
