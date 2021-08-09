@@ -1,10 +1,16 @@
 package controllers
 
 import (
+	"bufio"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
+
 	"io/ioutil"
 	"net/http"
+	"os"
 	"rest-go-demo/database"
 	"rest-go-demo/entity"
 	"strconv"
@@ -31,9 +37,9 @@ func GetAllUser(w http.ResponseWriter, r *http.Request) {
 
 //GetPersonByID returns user with specific ID
 func GetUserByID(w http.ResponseWriter, r *http.Request) {
+
 	vars := mux.Vars(r)
 	key := vars["id"]
-	fmt.Println(vars)
 
 	var user entity.User
 	error := database.Connector.First(&user, key).Error
@@ -52,17 +58,36 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	requestBody, _ := ioutil.ReadAll(r.Body)
 	var user entity.User
 	json.Unmarshal(requestBody, &user)
-
+	t := time.Now()
 	error := database.Connector.Create(user).Error
 	if error != nil {
-		fmt.Println("ban chua nhap du lieu")
+		fmt.Println("Fill your correct info to continue")
+	} else {
+		user.Created_time = fmt.Sprintf("%v", t.Format("2020-01-02 15:04:05"))
+		user.Modified_time = ""
+		fmt.Printf("\n Created an account complete at %v", user.Created_time)
 	}
-
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(user)
 
 	//nhap thieu du lieu
 	//nhap rong
+
+}
+
+func CreateUserFromCSV(w http.ResponseWriter, r *http.Request) {
+	// Open the CSV file for reading
+
+	var users = LoadUsersCSV()
+	for _, user := range users {
+		t := time.Now()
+		user.Created_time = fmt.Sprintf("%v", t.Format("2020-01-02 15:04:05"))
+		user.Modified_time = ""
+		error := database.Connector.Create(user).Error
+		if error != nil {
+			fmt.Println("Fill your correct info to continue")
+		} else {
+			fmt.Printf("\n Created an account complete at %v", user.Created_time)
+		}
+	}
 
 }
 
@@ -71,9 +96,13 @@ func UpdateUserByID(w http.ResponseWriter, r *http.Request) {
 	requestBody, _ := ioutil.ReadAll(r.Body)
 	var user entity.User
 	json.Unmarshal(requestBody, &user)
+	t := time.Now()
 	error := database.Connector.Save(&user).Error
 	if error != nil {
 		fmt.Println("Error")
+	} else {
+		user.Modified_time = fmt.Sprintf(t.Format("2020-01-02 15:04:05"))
+		fmt.Printf("\n Updating complete at %v", user.Modified_time)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -87,18 +116,23 @@ func UpdateUserByID(w http.ResponseWriter, r *http.Request) {
 //DeletePersonByID delete's user with specific ID
 func DeleteUserByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	if vars != nil {
-		fmt.Println("Enter id ")
+
+	if len(vars) == 0 {
+		fmt.Println("Enter an ID !")
 	}
 
 	key := vars["id"]
 
 	var user entity.User
 	id, _ := strconv.ParseInt(key, 10, 64)
-	err := database.Connector.Where("id = ?", id).Delete(&user).Error
+
+	err := database.Connector.First(&user, key).Error
 	if err != nil {
 		fmt.Println("ID doesn't exist")
+		return
 	}
+	database.Connector.Where("id = ?", id).Delete(&user)
+	fmt.Println("[ID :", key, "] has been successfully deleted !")
 	w.WriteHeader(http.StatusNoContent)
 
 }
@@ -115,11 +149,11 @@ func UserWithdraw(w http.ResponseWriter, r *http.Request) {
 
 	err1 := json.Unmarshal(requestBody, &cb)
 	if err1 != nil {
-		fmt.Print("error")
+		fmt.Print("Error")
 	}
 
 	var user entity.User
-	database.Connector.First(&user, cb.ID)
+	database.Connector.Where(`id =? AND name=?`, cb.ID, cb.Name).First(&user)
 	if user.Balance < minBalance {
 		fmt.Println("You dont have enough money to withdraw !")
 		return
@@ -131,11 +165,11 @@ func UserWithdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		Withdraw(&user, cb.Amount)
-		fmt.Println("you just successfully withdrew", cb.Amount, "from your account !")
+		fmt.Println("you have successfully withdrew", cb.Amount, "from your account !")
 	}
 
-	t := time.Now()                                      //set thoi gian hien tai
-	user.Modified_time = t.Format("2020-01-02 15:04:05") //truyen vao
+	//t := time.Now()                                      //set thoi gian hien tai
+	//user.Modified_time = t.Format("2020-01-02 15:04:05") //truyen vao
 
 	database.Connector.Save(&user)
 	w.Header().Set("Content-Type", "application/json")
@@ -158,18 +192,18 @@ func UserDeposit(w http.ResponseWriter, r *http.Request) {
 		fmt.Print("error")
 	}
 	var user entity.User
-	database.Connector.First(&user, cb.ID)
+	database.Connector.Where(`id =? AND name=?`, cb.ID, cb.Name).First(&user)
 
 	if cb.Amount < minCost {
 		fmt.Println("The minimum amount to perform a transaction is", minCost, "!")
 		return
 	} else {
 		Deposit(&user, cb.Amount)
-		fmt.Println("you just successfully deposited", cb.Amount, "to your account !")
+		fmt.Println("you have successfully deposited", cb.Amount, "to your account !")
 	}
 
-	t := time.Now()                                      //set thoi gian hien tai
-	user.Modified_time = t.Format("2020-01-02 15:04:05") // truyen vao
+	//t := time.Now()                                      //set thoi gian hien tai
+	//user.Modified_time = t.Format("2020-01-02 15:04:05") // truyen vao
 
 	database.Connector.Save(&user)
 	w.Header().Set("Content-type", "application/json")
@@ -204,7 +238,7 @@ func UserTransfer(w http.ResponseWriter, r *http.Request) {
 	} else {
 		Withdraw(&users[0], cb.Amount)
 		Deposit(&users[1], cb.Amount)
-		fmt.Println("you just successfully transferred", cb.Amount, "to id :", cb.TargetId, "!")
+		fmt.Println("you have successfully transferred", cb.Amount, "to id :", cb.TargetId, "!")
 	}
 	t := time.Now()
 	users[0].Modified_time = t.Format("2006-01-02 15:04:05")
@@ -227,4 +261,34 @@ func Withdraw(user *entity.User, num float64) {
 //check deposit amount and deposit function
 func Deposit(user *entity.User, num float64) {
 	user.Balance = user.Balance + num
+}
+
+func LoadUsersCSV() []entity.User {
+	var users []entity.User
+	file, _ := os.Open("users.csv")
+	reader := csv.NewReader(bufio.NewReader(file))
+	for {
+		line, err := reader.Read()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			log.Fatal(err)
+		}
+		id, err := strconv.ParseInt(line[0], 0, 64)
+		balance, err := strconv.ParseFloat(line[2], 64)
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(2)
+		}
+
+		users = append(users, entity.User{
+			ID:            id,
+			Name:          line[1],
+			Balance:       balance,
+			Created_time:  line[3],
+			Modified_time: line[4],
+		})
+	}
+	return users
 }

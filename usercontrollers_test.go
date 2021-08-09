@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/gorilla/mux"
 )
 
 func TestGetAllUser(t *testing.T) {
@@ -14,9 +16,12 @@ func TestGetAllUser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	w := httptest.NewRecorder()
 	handler := http.HandlerFunc(GetAllUser)
 	handler.ServeHTTP(w, req)
+	fmt.Println(req)
+
 	if status := w.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 
@@ -29,29 +34,24 @@ func TestGetAllUser(t *testing.T) {
 
 func TestGetUserById(t *testing.T) {
 
-	req, err := http.NewRequest("GET", "/get", nil)
+	req, err := http.NewRequest("GET", "/get/id", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(req.URL)
-	// var id string = "121212"
-	// url := "/get/" + id
-	// req.URL, _ = req.URL.Parse(url)
-	q := req.URL.Query()
-	q.Add("id", "1")
-	req.URL.RawQuery = q.Encode()
+
+	req = mux.SetURLVars(req, map[string]string{"id": "121212"})
 	w := httptest.NewRecorder()
 
 	handler := http.HandlerFunc(GetUserByID)
 	handler.ServeHTTP(w, req)
-	fmt.Println(w.Body)
+	fmt.Println(req)
 
 	if status := w.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 
 	}
 
-	expected := `{"id":121212,"name":"peter","balance":90000,"created_time":"12:00:00","modified_time":"12:00:00"}`
+	expected := `{"id":121212,"name":"peter","balance":90000,"created_time":"12:00:00","modified_time":"2021-08-04 15:00:26"}`
 	if strings.TrimSpace(w.Body.String()) != expected {
 		t.Errorf("handler returned unexpected bot: got %v want %v", w.Body.String(), expected)
 	}
@@ -101,25 +101,23 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestDeleteUserByID(t *testing.T) {
-	req, err := http.NewRequest("DELETE", "/delete/{id}", nil)
+	req, err := http.NewRequest("DELETE", "/delete/id", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	q := req.URL.Query()
-	q.Add("id", "3")
-	req.URL.RawQuery = q.Encode()
+	req = mux.SetURLVars(req, map[string]string{"id": "121212"})
 	w := httptest.NewRecorder()
 	handler := http.HandlerFunc(DeleteUserByID)
 	handler.ServeHTTP(w, req)
-	if status := w.Code; status != http.StatusOK {
+	if status := w.Code; status != http.StatusNoContent {
 		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
+			status, http.StatusNoContent)
 	}
-	expected := `{"id":3,"name":"hung","balance":190000,"created_time":"12:00:00","modified_time":"12:00:00"}`
-	if w.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			w.Body.String(), expected)
-	}
+	// expected := `{"id":3,"name":"hung","balance":190000,"created_time":"12:00:00","modified_time":"12:00:00"}`
+	// if w.Body.String() != expected {
+	// 	t.Errorf("handler returned unexpected body: got %v want %v",
+	// 		w.Body.String(), expected)
+	// }
 }
 
 func TestUserTransfer(t *testing.T) {
